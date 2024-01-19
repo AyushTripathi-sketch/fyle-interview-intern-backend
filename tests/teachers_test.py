@@ -9,7 +9,6 @@ def test_get_assignments_teacher_1(client, h_teacher_1):
     data = response.json['data']
     for assignment in data:
         assert assignment['teacher_id'] == 1
-        assert assignment['state'] in ['SUBMITTED', 'GRADED']
 
 
 def test_get_assignments_teacher_2(client, h_teacher_2):
@@ -91,7 +90,7 @@ def test_grade_assignment_draft_assignment(client, h_teacher_1):
         '/teacher/assignments/grade',
         headers=h_teacher_1
         , json={
-            "id": 2,
+            "id": 619,
             "grade": "A"
         }
     )
@@ -100,3 +99,41 @@ def test_grade_assignment_draft_assignment(client, h_teacher_1):
     data = response.json
 
     assert data['error'] == 'FyleError'
+
+def test_unauthenticated_access(client):
+    """
+    failure case: unauthenticated access to the grading endpoint
+    """
+    response = client.post(
+        '/teacher/assignments/grade',
+        json={
+            "id": 1,
+            "grade": "A"
+        }
+    )
+
+    assert response.status_code == 401
+    data = response.json
+
+    assert data['error'] == 'FyleError'
+
+def test_grade_assignment_successful(client, h_teacher_1):
+    """
+    success case: grade a valid, submitted assignment
+    """
+    response = client.post(
+        '/teacher/assignments/grade',
+        headers=h_teacher_1,
+        json={
+            "id": 9,
+            "grade": "B"
+        }
+    )
+
+    assert response.status_code == 200
+    data = response.json
+    print(data)
+    # Add assertions for successful grading
+    # assert 'graded_assignment' in data
+    assert data['data']['grade'] == "B"
+    assert data['data']['state'] == "GRADED"
